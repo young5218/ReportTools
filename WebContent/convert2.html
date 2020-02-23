@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>获取Server事务各项指标</title>
+
+<script src="jquery-3.4.1.min.js"></script>
+<script type="text/javascript">
+	$(function() {
+		$('#submit')
+				.click(
+						function() {
+							var resultStr="";
+							//获取时间
+							var reg = new RegExp("T", "g");
+							var startTime = $('#startTime').val().replace(reg,
+									" ").substr(0, 16);
+							var endTime = $('#endTime').val().replace(reg, " ")
+									.substr(0, 16);
+							
+							//获取时间差
+							var timePeriod = (new Date(Date.parse(endTime)) - new Date(Date.parse(startTime)))/1000/60;
+							//cookie
+							var cookie = $('#cookie').val();
+							//applicationId
+							var applicationId = $('#applicationId').val();
+							//获取指标项
+							var baseonIdList = [];
+							$.each($('.baseonId:checked'), function() {
+								baseonIdList.push($(this).val());
+							});
+							//循环发送请求获取数据
+								var senddata = "applicationId=" + applicationId
+										+ "&";
+								senddata += "instanceId=" + 0 + "&";
+								senddata += "timeType=" + 2 + "&";
+								senddata += "endTime=" + endTime + "&";
+								senddata +="timePeriod="+timePeriod+"&";
+								senddata +="baseonIdList="+JSON.stringify(baseonIdList)+"&";
+								senddata +="cookie="+cookie+"&";
+								senddata +="actionList="+$('#actionList').val();
+								
+								$.ajax({
+											type : 'post',
+											url:"http://localhost:8080/ReportTools/handle",
+											async:false,
+											data : senddata,
+											success : function(data) {
+												resultStr=data;
+											}
+
+										});
+								
+								
+								var json2map=JSON.parse(resultStr);
+								//渲染表头start-------------------
+								var th_value=[];
+								for(var key in json2map){
+									var tempmap=json2map[key];
+									for(var tempkey in tempmap){
+										th_value.push(tempkey);
+									}
+									break;
+								}
+								$('#dataTable').empty();
+								var th_html="<tr><th>事务名</th>";
+								for(var i=0;i<th_value.length;i++){
+									//3=吞吐率
+									//7=错误率
+									//11=Apdex
+									//14=响应时间
+									if('3'==th_value[i]){
+										th_html+= ("<th>吞吐率</th>");
+									}else if('7'==th_value[i]){
+										th_html+= ("<th>错误率</th>");
+									}else if('11'==th_value[i]){
+										th_html+= ("<th>Apdex</th>");
+									}else if('14'==th_value[i]){
+										th_html+= ("<th>响应时间</th>");
+									}else{
+										
+									}
+								}
+								th_html+="</tr>";
+								$('#dataTable').append(th_html);
+								//渲染表头end-----------------------
+								
+								//渲染表体start
+								for(var key in json2map){
+									var tempmap=json2map[key];
+									var td_html="<tr>";
+									td_html+=("<td>"+key+"</td>");
+									for(var i=0;i<th_value.length;i++){
+										td_html+=("<td>"+tempmap[th_value[i]]+"</td>");
+									}
+									td_html+="</tr>";
+									$('#dataTable').append(td_html);
+								}
+								//渲染表体end
+								
+								
+						});
+
+		
+		
+		
+		
+		
+	});
+</script>
+
+<style type="text/css">
+table.imagetable {
+	font-family: verdana, arial, sans-serif;
+	font-size: 11px;
+	color: #333333;
+	border-width: 1px;
+	border-color: #999999;
+	border-collapse: collapse;
+}
+
+table.imagetable th {
+	background: #b5cfd2;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #999999;
+}
+
+table.imagetable td {
+	background: #dcddc0;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #999999;
+}
+</style>
+</head>
+
+
+
+<body>
+	<p>注：用于saas Server中获取事务的各项指标</p>
+
+	开始时间：
+	<input type="datetime-local" value="2020-02-17T20:00:00" id="startTime" />
+	<br /> 结束时间：
+	<input type="datetime-local" value="2020-02-18T20:00:00" id="endTime" />
+	<br /> cookie:
+	<br />
+	<textarea id="cookie" rows="10" cols="100"></textarea>
+	<br /> applicationId:
+	<input type="text" id="applicationId" />
+	<br />
+	<p>
+
+		<input type="checkbox" class="baseonId" value="3"> 吞吐率
+		&nbsp;&nbsp;&nbsp;&nbsp; <input type="checkbox" class="baseonId"
+			value="7"> 错误率 &nbsp;&nbsp;&nbsp;&nbsp; <input
+			type="checkbox" class="baseonId" value="11"> Apdex
+		&nbsp;&nbsp;&nbsp;&nbsp; <input type="checkbox" class="baseonId"
+			value="14"> 响应时间 &nbsp;&nbsp;&nbsp;&nbsp;
+	</p>
+	<br /> 事务筛选：
+	<br />
+	<textarea rows="10" cols="100" id="actionList"></textarea>
+	<input type="button" value="提交" id="submit" /><br /><br />
+
+
+	<table class="imagetable" id="dataTable">
+	<!-- 通过js渲染表格 -->
+	</table>
+
+
+
+
+
+</body>
+</html>
